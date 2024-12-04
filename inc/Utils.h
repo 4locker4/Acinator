@@ -22,11 +22,11 @@
 #define CYAN    "\x1b[36m"
 #define STRANGE "\x1b[1;35;7m"
 
-#define COLOR_PRINT(color, ...)  {printf (color __VA_ARGS__); printf (RESET);}    ///< Colorful print
+#define COLOR_PRINT(color, ...)  {printf (color __VA_ARGS__); printf (RESET);}        ///< Colorful print
 
 #define COLOR_FPRINT(file, color, ...) {fprintf (file, color __VA_ARGS__); fprintf (file, RESET);}
 
-const double EPSILON = 1e-10;                                                       ///< Error constant double
+const double EPSILON = 1e-10;                                                         ///< Error constant double
 
 bool   IsZero             (const double val);                                         ///< Double error check
 bool   DoubleComparison   (const double firstNum, const double secondNum);            ///< Checking equality double

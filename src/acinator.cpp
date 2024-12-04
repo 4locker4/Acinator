@@ -1,7 +1,23 @@
 #include "../inc/acinator.h"
 #include "../inc/ErrConsts.h"
 
-#define PRINT
+static int    RecurcyDtor              (NODE * parent);
+static int    StrDataToNodeData        (char * text, int * counter, NODE * node);
+static NODE * RecursyAddNode           (NODE * node, char * text, int * counter);
+static NODE * FillRightLeftNodes       (NODE * new_node, char * text, int * counter);
+static NODE * Guesser                  (NODE * node);
+static NODE * AddNode                  (NODE * node, FILE * stream);
+static char * GetStr                   (FILE * stream);
+static int    Verificator              (NODE * node);
+static int    RecurcyDumpFill          (FILE * file, NODE * node);
+static int    CompareTwoObj            (NODE * root);
+static bool   Comparator               (NODE * node, char * str, Stack_t * answ_stack);
+static int    DataBaseDestroyer        (const char * file_directory);
+static int    SaveTreeToFile           (TREE * tree);
+static int    RecurcyFileWriter        (FILE * base, NODE * node);
+static int    PrintDifference          (Stack_t * obj_stack, bool first_answ, NODE * node, char * obj);
+static int    GraphDump                (NODE * node);
+static int    Dump                     (NODE * node);
 
 int main ()
 {
@@ -51,6 +67,8 @@ int StartAcination (TREE * tree)
         {
             case MAKE_A_DISH:
             {
+                printf ("\n");
+
                 Guesser (tree->root);
                 break;
             }
@@ -60,10 +78,9 @@ int StartAcination (TREE * tree)
 
                 break;
             }
-            case DESTROY:
+            case CHECK_BASE:
             {
-                DataBaseDestroyer (tree->data_base_file);
-
+                GraphDump (tree->root);
                 break;
             }
             case EXIT_WITHOUT_SAVE:
@@ -76,9 +93,10 @@ int StartAcination (TREE * tree)
 
                 break;
             }
-            case CHECK_BASE:
+            case DESTROY:
             {
-                GraphDump (tree->root);
+                DataBaseDestroyer (tree->data_base_file);
+
                 break;
             }
             default:
@@ -105,23 +123,44 @@ int TreeCtor (TREE * tree, const char * data_base_file)
     tree->status = true;
     tree->data_base_file = data_base_file;
 
-//    Verificator
+    return 0;
+}
+
+int TreeDtor (TREE * tree)
+{
+    my_assert (tree);
+
+    tree->status = false;
+    
+    free (tree->text);
+
+    if (tree->root->left)  RecurcyDtor ((NODE *) tree->root->left);
+    if (tree->root->right) RecurcyDtor ((NODE *) tree->root->right);
+
+    free (tree->root->left);
+    tree->root->left  = NULL;
+
+    free (tree->root->right);
+    tree->root->right = NULL;
+
+    tree->root->data  = NULL;
+
+    free (tree->root);
 
     return 0;
 }
 
-int TreeDtor (NODE * parent)
+int RecurcyDtor (NODE * parent)
 {
     my_assert (parent);
 
-    if (parent->left) TreeDtor ((NODE *) parent->left);
+    if (parent->left) RecurcyDtor ((NODE *) parent->left);
 
-    if (parent->right) TreeDtor ((NODE *) parent->right);
+    if (parent->right) RecurcyDtor ((NODE *) parent->right);
 
-    free (parent->data);
     parent->data   = NULL;
 
-    free (parent->parent);
+    free (parent->data);
     parent->parent = NULL;
 
     free (parent->left);
@@ -143,34 +182,30 @@ int FillTheTree (TREE * tree)
     printf ("Start reading file...\n");
 #endif
 
-    char * text = FileToStr (tree->data_base_file, &file_size);
+    tree->text = FileToStr (tree->data_base_file, &file_size);
 
     int counter = 0;
 
-    if (text[counter++] == '{')
+    if (tree->text[counter++] == '{')
     {
         counter++;
-        StrDataToNodeData (text, &counter, tree->root);
+        StrDataToNodeData (tree->text, &counter, tree->root);
     }
     else
     {
-        printf ("Wrong data type before root\n");
+        COLOR_PRINT (RED, "Wrong data type before root\n");
         return -1;
     }
 
-    tree->root->left = RecursyAddNode (tree->root, text, &counter);
+    tree->root->left = RecursyAddNode (tree->root, tree->text, &counter);                                     // Recurcy fill left
 
-    while (isspace (text[counter++]));
+    while (isspace (tree->text[counter++]));
 
-    tree->root->right = RecursyAddNode (tree->root, text, &counter);
+    tree->root->right = RecursyAddNode (tree->root, tree->text, &counter);                                    // Recurcy fill right
 
-    Dump (tree->root);
-
-    GraphDump (tree->root);
-
+#ifdef PRINT
     printf ("Node right data %p\n",((NODE *) tree->root->right));
-
-    free (text);
+#endif
 
     return 0;
 }
@@ -205,14 +240,15 @@ NODE * RecursyAddNode (NODE * node, char * text, int * counter)
         if (new_node->right)
             printf ("already readed yes: %s\n", ((NODE *) new_node->right)->data);
 #endif;
-        
-        Dump (new_node);
 
+#ifdef PRINT
+        Dump (new_node);
+#endif
         return new_node;
     }
     else
     {
-        printf ("something went wrong while filling the tree\n");
+        COLOR_PRINT (RED, "something went wrong while filling the tree\n");
         return 0;
     }
 
@@ -223,7 +259,7 @@ NODE * FillRightLeftNodes (NODE * new_node, char * text, int * counter)
 {
     TREE_READ_ASSERT_ (text, counter);
 
-    while (isspace (text[*counter]) || text[*counter] == '\r')
+    while (isspace (text[*counter]))
         (*counter)++;
         
     if (text[*counter] != '}')
@@ -253,32 +289,14 @@ int StrDataToNodeData (char * text, int * counter, NODE * node)
     printf ("Readed data from file\t| \t");
 #endif
 
-    size_t len = 0;
-    size_t mnim_len = START_STR_SIZE;
-
-    node->data = (char *) calloc (mnim_len, sizeof (char));
-    my_assert (node->data);
+    node->data = text + *counter;
 
     while (text[*counter] != '"')
-    {
-        node->data[len++] = text[*counter];
-
         (*counter)++;
+    
+    text[*counter] = '\0';
 
-        if (len == mnim_len - 1)
-        {
-            mnim_len *= 2;
-
-            node->data = (char *) realloc (node->data, mnim_len);
-            my_assert (node->data);
-        }
-    }
-    node->data[len] = '\0';
-
-    (*counter)++;
-
-    node->data = (char *) realloc (node->data, len + 1);
-    my_assert (node->data);
+    *counter += 1;
 
 #ifdef PRINT
     printf ("%s\n", node->data);
@@ -298,7 +316,9 @@ NODE * Guesser (NODE * node)
     if (!scanf ("%c", &answer))
     {
         printf ("There is a mistake while reading your answer, try again\n");
-        exit (-1);
+
+        BufferCleaner ();
+
         Guesser (node);
     }
         
@@ -312,8 +332,8 @@ NODE * Guesser (NODE * node)
         {
             if (!node->right)
             {
-                printf ("Yes, I did this, HaHaHa\n");
-                printf ("Thank`s for playing\n\n");
+                COLOR_PRINT (GREEN, "Yes, I did this, HaHaHa\n");
+                COLOR_PRINT (GREEN, "Thank`s for playing\n\n");
 
                 return 0;
             }
@@ -334,6 +354,7 @@ NODE * Guesser (NODE * node)
         default:
         {
             printf ("Please, put only 'y' or 'n'\nYou put %c\n", answer);
+
             Guesser (node);
         }
     }
@@ -351,17 +372,12 @@ NODE * AddNode (NODE * node, FILE * stream)
 
     node->right = (NODE *) calloc (1, sizeof (NODE));
 
-    ((NODE *) node->right)->data = GetStr (stdin);
-    ((NODE *) node->right)->right = NULL;
-    ((NODE *) node->right)->left  = NULL;
-    ((NODE *) node->right)->parent = node;
+    char * users_answ = GetStr (stdin);
+    ADD_LAST_NODE_ ((NODE *) node->right, users_answ, node);
 
     node->left = (NODE *) calloc (1, sizeof (NODE));
 
-    ((NODE *) node->left)->data = node->data;
-    ((NODE *) node->left)->left = NULL;
-    ((NODE *) node->left)->right = NULL;
-    ((NODE *) node->left)->parent = node;
+    ADD_LAST_NODE_ ((NODE *) node->left, node->data, node);
 
     printf ("Now tell me, what are the differences between %s and %s?\n", ((NODE *) node->right)->data, ((NODE *) node->left)->data);
 
@@ -442,7 +458,7 @@ int CompareTwoObj (NODE * root)
     bool first_answ  = 0;
     bool second_answ = 0;
 
-    printf ("This is how they are similar:\n");
+    COLOR_PRINT (GREEN, "This is how they are similar:\n");
 
     while (obj1_stack.size > 0 && obj2_stack.size > 0)
     {
@@ -466,70 +482,54 @@ int CompareTwoObj (NODE * root)
         }
     }
 
-    printf ("Now there are difference between %s and %s\n", obj1, obj2);
-
-    printf ("Let`s start from %s\n", obj1);
+    COLOR_PRINT (MANGETA, "Now there are difference between %s and %s\n", obj1, obj2);
+    COLOR_PRINT (CYAN, "Let`s start from %s\n", obj1);
 
     NODE * node_obj1 = root;
     NODE * node_obj2 = root;
 
-    if (!first_answ)
+    PrintDifference (&obj1_stack, first_answ, node_obj1, obj1);
+
+    COLOR_PRINT (YELLOW, "And begin with %s:\n", obj2);
+
+    PrintDifference (&obj2_stack, second_answ, node_obj2, obj2);
+
+    return  0;
+}
+
+int PrintDifference (Stack_t * obj_stack, bool first_answ, NODE * node, char * obj)
+{
+    my_assert (obj_stack);
+    my_assert (node);
+
+        if (!first_answ)
     {
-        printf ("\t%s is not %s\n", obj1, node_obj1->data);
-        node_obj1 = (NODE *) node_obj1->left;
+        COLOR_PRINT (CYAN, "\t%s is not %s\n", obj, node->data);
+        node = (NODE *) node->left;
     }
     else
     {
-        printf ("\tIt is %s\n", node_obj1->data);
-        node_obj1 = (NODE *) node_obj1->right;
+        COLOR_PRINT (CYAN, "\tIt is %s\n", node->data);
+        node = (NODE *) node->right;
     }
 
-    while (obj1_stack.size > 0)
+    while (obj_stack->size > 0)
     {
-        first_answ  = StackPop (&obj1_stack);
+        first_answ  = StackPop (obj_stack);
 
         if (!first_answ)
         {
-            printf ("\t%s is not %s\n", obj1, node_obj1->data);
-            node_obj1 = (NODE *) node_obj1->left;
+            COLOR_PRINT (CYAN, "\t%s is not %s\n", obj, node->data);
+            node = (NODE *) node->left;
         }
         else
         {
-            printf ("\tIt is %s\n", node_obj1->data);
-            node_obj1 = (NODE *) node_obj1->right;
+            COLOR_PRINT (CYAN, "\tIt is %s\n", node->data);
+            node = (NODE *) node->right;
         }
     }
 
-    printf ("And begin with %s:\n", obj2);
-
-    if (!second_answ)
-    {
-        printf ("\t%s is not %s\n", obj2, node_obj2->data);
-        node_obj2 = (NODE *) node_obj2->left;
-    }
-    else
-    {
-        printf ("\tIt is %s\n", node_obj2->data);
-        node_obj2 = (NODE *) node_obj2->right;
-    }
-    
-    while (obj2_stack.size > 0)
-    {
-        second_answ  = StackPop (&obj2_stack);
-
-        if (!second_answ)
-        {
-            printf ("\t%s is not %s\n", obj2, node_obj2->data);
-            node_obj2 = (NODE *) node_obj2->left;
-        }
-        else
-        {
-            printf ("\tIt is %s\n", node_obj2->data);
-            node_obj2 = (NODE *) node_obj2->right;
-        }
-    }
-
-    return  0;
+    return 0;
 }
 
 bool Comparator (NODE * node, char * str, Stack_t * answ_stack)

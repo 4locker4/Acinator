@@ -32,7 +32,15 @@ const bool   RIGHT              = true;
 
 #define VERIFY(node);
 
-typedef char nodeElem;
+#define ADD_LAST_NODE_(node, text, parent_node)                             \
+                                {                                           \
+                                        (node)->data = text;                \
+                                        (node)->right = NULL;               \
+                                        (node)->left  = NULL;               \
+                                        (node)->parent = parent_node;       \
+                                }
+
+typedef char * nodeElem;
 
 typedef struct
 {
@@ -41,12 +49,14 @@ typedef struct
 
     void * parent = NULL;
 
-    nodeElem * data = NULL;
+    nodeElem data = NULL;
 } NODE;
 
 typedef struct
 {
     NODE * root = NULL;
+
+    char * text = NULL;
 
     const char * data_base_file = NULL;
 
@@ -57,21 +67,5 @@ int    TreeCtor                 (TREE * tree, const char * data_base_file);
 int    TreeDtor                 (NODE * parent);
 int    StartAcination           (TREE * tree);
 int    FillTheTree              (TREE * tree);
-int    StrDataToNodeData        (char * text, int * counter, NODE * node);
-int    GraphDump                (NODE * node);
-NODE * RecursyAddNode           (NODE * node, char * text, int * counter);
-int    Dump                     (NODE * node);
-NODE * FillRightLeftNodes       (NODE * new_node, char * text, int * counter);
-NODE * Guesser                  (NODE * node);
-int    StartAcination           (TREE * tree);
-NODE * AddNode                  (NODE * node, FILE * stream);
-char * GetStr                   (FILE * stream);
-int    Verificator              (NODE * node);
-int    RecurcyDumpFill          (FILE * file, NODE * node);
-int    CompareTwoObj            (NODE * root);
-bool   Comparator               (NODE * node, char * str, Stack_t * answ_stack);
-int    DataBaseDestroyer        (const char * file_directory);
-int    SaveTreeToFile           (TREE * tree);
-int    RecurcyFileWriter        (FILE * base, NODE * node);
 
 #endif // ACINATOR_H
