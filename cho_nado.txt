@@ -1,0 +1,36 @@
+
+akin_run
+
+print_tree (TREE *tree, FILE *stream)           stdout or file
+
+guess
+determ
+compare
+print_data_base
+exit
+exit_with_save_data_base
+
+get_string
+fgetc
+
+(is animal_(is build (hui nil nil) (house nil nil)) (is negr (rinat nil nil) (egor_xyesos nil nil)))
+
+READ_TREE
+1. check ( // return NULL           check nill maybe here
+2. get element
+3. check nil (if have nil then str += 3)
+    3.1 if net nila then ...->left_node = call read_tree
+4. check nil (...)
+    4.1 if net nila then ...->left_node = call read_tree
+5. check )
+
+{"soup"
+    {"with garnier"
+        {"steak"}
+        {"mash"}
+    }
+    {"its red"
+        {"solyanka"}
+        {"borsh"}
+    }
+}

@@ -1,0 +1,16 @@
+{"soup"
+	{"with garnier"
+	    {"mashed meat"
+	        {"steak"}
+	        {"with chicken"
+	            {"cotlets"}
+	            {"chicken"}
+            }
+        }
+	    {"mash"}
+    }
+	{"its red"
+	    {"solyanka"}
+	    {"borsh"}
+    }
+}

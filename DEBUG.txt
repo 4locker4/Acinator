@@ -1,0 +1,7 @@
+You made a repeated stack
+You made a repeated stack
+Strack_t <0064FE40> born at Stack/src/Stack.cpp: 115, name: "stk"
+Data is NULL
+You made a repeated stack
+Strack_t <0064FE40> born at Stack/src/Stack.cpp: 115, name: "stk"
+Data is NULL
