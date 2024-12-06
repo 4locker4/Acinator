@@ -1,34 +1,29 @@
 #include "../inc/acinator.h"
 #include "../inc/ErrConsts.h"
 
-static int    RecurcyDtor              (NODE * parent);
-static int    StrDataToNodeData        (char * text, int * counter, NODE * node);
-static NODE * RecursyAddNode           (NODE * node, char * text, int * counter);
-static NODE * FillRightLeftNodes       (NODE * new_node, char * text, int * counter);
-static NODE * Guesser                  (NODE * node);
-static NODE * AddNode                  (NODE * node, FILE * stream);
-static char * GetStr                   (FILE * stream);
-static int    Verificator              (NODE * node);
-static int    RecurcyDumpFill          (FILE * file, NODE * node);
-static int    CompareTwoObj            (NODE * root);
-static bool   Comparator               (NODE * node, char * str, Stack_t * answ_stack);
-static int    DataBaseDestroyer        (const char * file_directory);
-static int    SaveTreeToFile           (TREE * tree);
-static int    RecurcyFileWriter        (FILE * base, NODE * node);
-static int    PrintDifference          (Stack_t * obj_stack, bool first_answ, NODE * node, char * obj);
-static int    GraphDump                (NODE * node);
-static int    Dump                     (NODE * node);
+static NODE * Guesser                (NODE * node);
+static NODE * AddNode                (NODE * node, FILE * stream);
+static char * GetStr                 (FILE * stream);
+static int    RecurcyDumpFill        (FILE * file, NODE * node);
+static int    CompareTwoObj          (NODE * root);
+static bool   Comparator             (NODE * node, char * str, Stack_t * answ_stack);
+static int    PrintDifference        (Stack_t * obj_stack, NODE * node, char * obj);
+static int    GraphDump              (NODE * node);
+static int    Dump                   (NODE * node);
+static char * GetStackPathToObj      (Stack_t * obj_stack, NODE * root, char * obj);
+NODE *        NodeCreater            (char * node_data, NODE * left, NODE * right, NODE * parent);
+
+static const char * data_base_file = "./Bases/base1.txt";
 
 int main ()
 {
-    TREE * tree = (TREE *) calloc (1, sizeof (TREE));
-    my_assert (tree);
+    TREE tree = {};
 
-    TreeCtor (tree, data_base_file);
+    TreeCtor (&tree, data_base_file);
 
-    FillTheTree (tree);
+    FillTheTree (&tree);
 
-    StartAcination (tree);
+    StartAcination (&tree);
 }
 
 int StartAcination (TREE * tree)
@@ -44,11 +39,11 @@ int StartAcination (TREE * tree)
     while (true)
     {
         printf ("1  -  if You want me to pick up a dish for You\n"
-                "2  -  if You want to compare two dishes\n"
-                "3  -  if You want to see data base\n\n"
-                "4  -  if You want to exit without save Your changes\n"
-                "5  -  if You want to exit and save new data base\n\n"
-                "6  -  if You want to destroy this data base\n\n");
+                "2  -  if You want to determ object\n"
+                "3  -  if You want to compare two dishes\n"
+                "4  -  if You want to see data base\n\n"
+                "5  -  if You want to exit without save Your changes\n"
+                "6  -  if You want to exit and save new data base\n\n");
         
         int action = 0;
 
@@ -72,6 +67,21 @@ int StartAcination (TREE * tree)
                 Guesser (tree->root);
                 break;
             }
+            case DETERM:
+            {
+                Stack_t obj_stack = {};
+
+                char *  user_answ = NULL;
+
+                printf ("Enter the dish:\t");
+
+                user_answ = GetStackPathToObj (&obj_stack, tree->root, user_answ);
+
+                printf ("\n");
+                if (user_answ) PrintDifference (&obj_stack, tree->root, user_answ);
+
+                break;
+            }
             case COMPARE:
             {
                 CompareTwoObj (tree->root);
@@ -93,12 +103,6 @@ int StartAcination (TREE * tree)
 
                 break;
             }
-            case DESTROY:
-            {
-                DataBaseDestroyer (tree->data_base_file);
-
-                break;
-            }
             default:
             {
                 COLOR_PRINT (RED, "You entered wrong num, sorry\n");
@@ -108,201 +112,6 @@ int StartAcination (TREE * tree)
 
     return 0;
 
-}
-
-int TreeCtor (TREE * tree, const char * data_base_file)
-{
-    my_assert (data_base_file);
-    my_assert (tree);
-
-    tree->root = (NODE *) calloc (1, sizeof (NODE));
-    my_assert (tree->root);
-
-    tree->root->parent = NULL;
-
-    tree->status = true;
-    tree->data_base_file = data_base_file;
-
-    return 0;
-}
-
-int TreeDtor (TREE * tree)
-{
-    my_assert (tree);
-
-    tree->status = false;
-    
-    free (tree->text);
-
-    if (tree->root->left)  RecurcyDtor ((NODE *) tree->root->left);
-    if (tree->root->right) RecurcyDtor ((NODE *) tree->root->right);
-
-    free (tree->root->left);
-    tree->root->left  = NULL;
-
-    free (tree->root->right);
-    tree->root->right = NULL;
-
-    tree->root->data  = NULL;
-
-    free (tree->root);
-
-    return 0;
-}
-
-int RecurcyDtor (NODE * parent)
-{
-    my_assert (parent);
-
-    if (parent->left) RecurcyDtor ((NODE *) parent->left);
-
-    if (parent->right) RecurcyDtor ((NODE *) parent->right);
-
-    parent->data   = NULL;
-
-    free (parent->data);
-    parent->parent = NULL;
-
-    free (parent->left);
-    parent->left   = NULL;
-
-    free (parent->right);
-    parent->right  = NULL;
-
-    return 0;
-}
-
-int FillTheTree (TREE * tree)
-{
-    my_assert (tree);
-
-    size_t file_size = 0;
-
-#ifdef PRINT
-    printf ("Start reading file...\n");
-#endif
-
-    tree->text = FileToStr (tree->data_base_file, &file_size);
-
-    int counter = 0;
-
-    if (tree->text[counter++] == '{')
-    {
-        counter++;
-        StrDataToNodeData (tree->text, &counter, tree->root);
-    }
-    else
-    {
-        COLOR_PRINT (RED, "Wrong data type before root\n");
-        return -1;
-    }
-
-    tree->root->left = RecursyAddNode (tree->root, tree->text, &counter);                                     // Recurcy fill left
-
-    while (isspace (tree->text[counter++]));
-
-    tree->root->right = RecursyAddNode (tree->root, tree->text, &counter);                                    // Recurcy fill right
-
-#ifdef PRINT
-    printf ("Node right data %p\n",((NODE *) tree->root->right));
-#endif
-
-    return 0;
-}
-
-NODE * RecursyAddNode (NODE * node, char * text, int * counter)
-{
-    TREE_READ_ASSERT_ (text, counter)
-
-    while (isspace (text[*counter]))
-        (*counter)++;
-
-    if (text[*counter] == '{')
-    {
-        *counter += 2;                                                              // Skip {"
-
-        NODE * new_node = (NODE *) calloc (1, sizeof (NODE));
-
-        new_node->parent = node;
-
-        StrDataToNodeData (text, counter, new_node);
-
-        new_node->left  = FillRightLeftNodes ((NODE *) new_node, text, counter);
-
-#ifdef PRINT
-        if (new_node->left)
-            printf ("already readed no: %s\n", ((NODE *) new_node->left)->data);
-#endif
-
-        new_node->right = FillRightLeftNodes ((NODE *) new_node, text, counter);
-
-#ifdef PRINT
-        if (new_node->right)
-            printf ("already readed yes: %s\n", ((NODE *) new_node->right)->data);
-#endif;
-
-#ifdef PRINT
-        Dump (new_node);
-#endif
-        return new_node;
-    }
-    else
-    {
-        COLOR_PRINT (RED, "something went wrong while filling the tree\n");
-        return 0;
-    }
-
-    return 0;
-}
-
-NODE * FillRightLeftNodes (NODE * new_node, char * text, int * counter)
-{
-    TREE_READ_ASSERT_ (text, counter);
-
-    while (isspace (text[*counter]))
-        (*counter)++;
-        
-    if (text[*counter] != '}')
-    {
-        new_node  = RecursyAddNode (new_node, text, counter);
-
-        while (isspace (text[*counter]))
-            (*counter)++;
-            
-        *counter += 1;
-    }
-    else
-    {
-        new_node = NULL;
-
-        return new_node;
-    }
-
-    return new_node;
-}
-
-int StrDataToNodeData (char * text, int * counter, NODE * node)
-{
-    TREE_READ_ASSERT_ (text, counter);
-
-#ifdef PRINT
-    printf ("Readed data from file\t| \t");
-#endif
-
-    node->data = text + *counter;
-
-    while (text[*counter] != '"')
-        (*counter)++;
-    
-    text[*counter] = '\0';
-
-    *counter += 1;
-
-#ifdef PRINT
-    printf ("%s\n", node->data);
-#endif
-
-    return 0;
 }
 
 NODE * Guesser (NODE * node)
@@ -320,6 +129,7 @@ NODE * Guesser (NODE * node)
         BufferCleaner ();
 
         Guesser (node);
+        return 0;
     }
         
     printf ("\n");
@@ -328,7 +138,7 @@ NODE * Guesser (NODE * node)
 
     switch (answer)
     {
-        case 'y':
+        case USER_SAY_YES:
         {
             if (!node->right)
             {
@@ -338,17 +148,17 @@ NODE * Guesser (NODE * node)
                 return 0;
             }
             else
-                Guesser ((NODE *) node->right);
+                Guesser (node->right);
             break;
         }
-        case 'n':
+        case USER_SAY_NO:
         {
             if (!node->left)
             {
                 AddNode (node, stdin);
             }
             else
-                Guesser ((NODE *) node->left);
+                Guesser (node->left);
             break;
         }
         default:
@@ -362,7 +172,6 @@ NODE * Guesser (NODE * node)
     return 0;
 }
 
-// Матвей,я знаю, что функция говна, я переделаю
 NODE * AddNode (NODE * node, FILE * stream)
 {
     my_assert (node);
@@ -370,16 +179,12 @@ NODE * AddNode (NODE * node, FILE * stream)
 
     printf ("Okey boy, You got me. I don`t know what is this. Tell me what is it?\n");
 
-    node->right = (NODE *) calloc (1, sizeof (NODE));
-
     char * users_answ = GetStr (stdin);
-    ADD_LAST_NODE_ ((NODE *) node->right, users_answ, node);
+    node->right = NodeCreater (users_answ, NULL, NULL, node);
 
-    node->left = (NODE *) calloc (1, sizeof (NODE));
+    node->left  = NodeCreater (node->data, NULL, NULL, node);
 
-    ADD_LAST_NODE_ ((NODE *) node->left, node->data, node);
-
-    printf ("Now tell me, what are the differences between %s and %s?\n", ((NODE *) node->right)->data, ((NODE *) node->left)->data);
+    printf ("Now tell me, what are the differences between %s and %s?\n", (node->right)->data, (node->left)->data);
 
     node->data = GetStr (stdin);
 
@@ -398,13 +203,11 @@ char * GetStr (FILE * stream)
     char * strng = (char *) calloc (mnim_len, sizeof (char));
     my_assert (strng);
 
-    strng[len] = fgetc (stream);
-
-    while (strng[len] != '\n')
+    while ((strng[len] = fgetc (stream)) != '\n')
     {
-        strng[++len] = fgetc (stream);
+        len++;
 
-        if (len == mnim_len - 3)
+        if (len == mnim_len)
         {
             mnim_len *= 2;
 
@@ -418,6 +221,8 @@ char * GetStr (FILE * stream)
     strng = (char *) realloc (strng, len + 1);
     my_assert (strng);
 
+    printf ("%s\n", strng);
+
     return strng;
 }
 
@@ -426,34 +231,16 @@ int CompareTwoObj (NODE * root)
     my_assert (root);
 
     printf ("Enter first dish:\t");
-    char * obj1 = GetStr (stdin);
 
     Stack_t obj1_stack = {};
-
-    StackCtor (&obj1_stack, STANDART_SIZE);
-
-    if (!Comparator (root, obj1, &obj1_stack))
-    {
-        printf ("Sorry, Your %s didn`t find\n", obj1);
-
-        return 0;
-    }
+    char * obj1 = GetStackPathToObj (&obj1_stack, root, obj1);
 
     printf ("\nEnter another dish:\t");
-    char * obj2 = GetStr (stdin);
-
-    printf ("\n\n");
 
     Stack_t obj2_stack = {};
+    char * obj2 = GetStackPathToObj (&obj2_stack, root, obj2);
 
-    StackCtor (&obj2_stack, STANDART_SIZE);
-
-    if (!Comparator (root, obj2, &obj2_stack))
-    {
-        printf ("Sorry, Your %s didn`t find\n", obj2);
-
-        return 0;
-    }
+    printf ("\n\n");
 
     bool first_answ  = 0;
     bool second_answ = 0;
@@ -467,18 +254,21 @@ int CompareTwoObj (NODE * root)
 
         if (first_answ != second_answ)
         {
+            StackPush (&obj1_stack, first_answ);
+            StackPush (&obj2_stack, second_answ);
+
             break;
         }
 
         if (!first_answ)
         {
             printf ("They are not %s\n", root->data);
-            root = (NODE *) root->left;
+            root = root->left;
         }
         else
         {
             printf ("They are %s\n", root->data);
-            root = (NODE *) root->right;
+            root = root->right;
         }
     }
 
@@ -488,30 +278,40 @@ int CompareTwoObj (NODE * root)
     NODE * node_obj1 = root;
     NODE * node_obj2 = root;
 
-    PrintDifference (&obj1_stack, first_answ, node_obj1, obj1);
+    PrintDifference (&obj1_stack, node_obj1, obj1);
 
     COLOR_PRINT (YELLOW, "And begin with %s:\n", obj2);
 
-    PrintDifference (&obj2_stack, second_answ, node_obj2, obj2);
+    PrintDifference (&obj2_stack, node_obj2, obj2);
 
     return  0;
 }
 
-int PrintDifference (Stack_t * obj_stack, bool first_answ, NODE * node, char * obj)
+char * GetStackPathToObj (Stack_t * obj_stack, NODE * root, char * obj)
+{
+    my_assert (obj_stack);
+    my_assert (root);
+
+    obj = GetStr (stdin);
+
+    StackCtor (obj_stack, STANDART_SIZE);
+
+    if (!Comparator (root, obj, obj_stack))
+    {
+        printf ("Sorry, Your %s didn`t find\n", obj);
+
+        return 0;
+    }
+
+    return obj;
+}
+
+int PrintDifference (Stack_t * obj_stack, NODE * node, char * obj)
 {
     my_assert (obj_stack);
     my_assert (node);
 
-        if (!first_answ)
-    {
-        COLOR_PRINT (CYAN, "\t%s is not %s\n", obj, node->data);
-        node = (NODE *) node->left;
-    }
-    else
-    {
-        COLOR_PRINT (CYAN, "\tIt is %s\n", node->data);
-        node = (NODE *) node->right;
-    }
+    bool first_answ = 0;
 
     while (obj_stack->size > 0)
     {
@@ -520,12 +320,12 @@ int PrintDifference (Stack_t * obj_stack, bool first_answ, NODE * node, char * o
         if (!first_answ)
         {
             COLOR_PRINT (CYAN, "\t%s is not %s\n", obj, node->data);
-            node = (NODE *) node->left;
+            node = node->left;
         }
         else
         {
             COLOR_PRINT (CYAN, "\tIt is %s\n", node->data);
-            node = (NODE *) node->right;
+            node = node->right;
         }
     }
 
@@ -542,14 +342,14 @@ bool Comparator (NODE * node, char * str, Stack_t * answ_stack)
     if (!strcasecmp (str, node->data))
         return GOT_ELEM;
     
-    if (Comparator ((NODE *) node->left, str, answ_stack))
+    if (Comparator (node->left, str, answ_stack))
     {
         StackPush (answ_stack, LEFT);
 
         return GOT_ELEM;
     }
 
-    if (Comparator ((NODE *) node->right, str, answ_stack))
+    if (Comparator (node->right, str, answ_stack))
     {
         StackPush (answ_stack, RIGHT);
 
@@ -557,80 +357,6 @@ bool Comparator (NODE * node, char * str, Stack_t * answ_stack)
     }
 
     return DIDNT_FIND;
-}
-
-int DataBaseDestroyer (const char * file_name)
-{
-    my_assert (file_name);
-
-    system ("rm");
-    system (file_name);
-
-    return 0;
-}
-
-int SaveTreeToFile (TREE * tree)
-{
-    TREE_READ_ASSERT_ (tree->data_base_file, tree->root)
-
-    FILE * base = fopen (tree->data_base_file, "w+");
-    my_assert (base);
-
-    fprintf (base, "{\"%s\"\n", tree->root->data);
-
-    if (tree->root->left)
-    {
-        RecurcyFileWriter (base, (NODE *) tree->root->left);
-    }
-    if (tree->root->right)
-    {
-        RecurcyFileWriter (base, (NODE *) tree->root->right);
-    }
-    fprintf (base, "}");
-
-    my_assert (!fclose (base));
-
-    return 0;
-}
-
-int RecurcyFileWriter (FILE * base, NODE * node)
-{
-    my_assert (base);
-    my_assert (node);
-
-    fprintf (base, "\t{\"%s\"\n", node->data);
-
-    if (node->left)
-    {
-        RecurcyFileWriter (base, (NODE *) node->left);
-    }
-
-    if (node->right)
-    {
-        RecurcyFileWriter (base, (NODE *) node->right);
-    }
-
-    fprintf (base, "}\n");
-
-    return 0;
-}
-
-int Verificator (NODE * node)
-{
-    int error = 0;
-
-    if (!node)
-    {
-        error |= NODE_IS_NULL;
-        printf ("pointer to node is NULL\n");
-    }
-
-    if (!node->data)
-    {
-        error |= NODE_DATA_NULL;
-    }
-
-    return error;
 }
 
 int Dump (NODE * node)
@@ -694,8 +420,8 @@ int RecurcyDumpFill (FILE * file, NODE * node)
                    "{%s | {{parent | %p} | {left | %p} | {right | %p}}}\" ]\n",
                    node, color, node->data, node->parent, node->left, node->right);
 
-    if (node->left) RecurcyDumpFill (file, (NODE *) node->left);
-    if (node->right) RecurcyDumpFill (file, (NODE *) node->right);
+    if (node->left) RecurcyDumpFill (file, node->left);
+    if (node->right) RecurcyDumpFill (file, node->right);
 
     if (node->left)
         fprintf (file, "\tQ%p -> Q%p\n", node, node->left);

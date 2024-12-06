@@ -4,7 +4,7 @@ akin_run
 print_tree (TREE *tree, FILE *stream)           stdout or file
 
 guess
-determ
+define
 compare
 print_data_base
 exit

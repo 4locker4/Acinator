@@ -9,9 +9,9 @@ flags = -c -Wshadow -Winit-self -Wredundant-decls -Wcast-align -Wundef -Wfloat-e
 		-Wsign-promo -Wstack-usage=8192 -Wstrict-aliasing -Wstrict-null-sentinel -Wtype-limits 	\
 		-Wwrite-strings -Werror=vla -D_DEBUG -D_EJUDGE_CLIENT_SIDE
 
-includes = ./inc/Errors.h ./inc/Utils.h ./inc/acinator.h ./inc/ErrConsts.h Stack/inc/Stack.h Stack/src/Defines.h
+includes = ./inc/Errors.h ./inc/Utils.h ./inc/acinator.h ./inc/ErrConsts.h Stack/inc/Stack.h Stack/src/Defines.h Tree/inc/tree.h
 
-sources = ./src/acinator.cpp ./src/Utils.cpp Stack/src/Stack.cpp
+sources = ./src/acinator.cpp ./src/Utils.cpp Stack/src/Stack.cpp Tree/src/BaseManipulations.cpp Tree/src/tree.cpp
 
 objects = $(sources:.cpp=.o)
 

@@ -7,6 +7,7 @@
 #include "Utils.h"
 #include "Errors.h"
 #include "ErrConsts.h"
+#include "../Tree/inc/tree.h"
 
 #include "../Stack/inc/Stack.h"
 #include "../Stack/src/Defines.h"
@@ -30,42 +31,21 @@ const bool   DIDNT_FIND         = false;
 const bool   LEFT               = false;
 const bool   RIGHT              = true;
 
+const int    USER_SAY_NO        = 'n';
+const int    USER_SAY_YES       = 'y';
+
 #define VERIFY(node);
 
-#define ADD_LAST_NODE_(node, text, parent_node)                             \
-                                {                                           \
-                                        (node)->data = text;                \
-                                        (node)->right = NULL;               \
-                                        (node)->left  = NULL;               \
-                                        (node)->parent = parent_node;       \
-                                }
-
-typedef char * nodeElem;
-
-typedef struct
+enum ACTION
 {
-    void * left   = NULL;
-    void * right  = NULL;
+    MAKE_A_DISH = 1,
+    DETERM,
+    COMPARE,
+    CHECK_BASE,
+    EXIT_WITHOUT_SAVE,
+    EXIT_AND_SAVE,
+};
 
-    void * parent = NULL;
-
-    nodeElem data = NULL;
-} NODE;
-
-typedef struct
-{
-    NODE * root = NULL;
-
-    char * text = NULL;
-
-    const char * data_base_file = NULL;
-
-    bool status = 0;
-} TREE;
-
-int    TreeCtor                 (TREE * tree, const char * data_base_file);
-int    TreeDtor                 (NODE * parent);
 int    StartAcination           (TREE * tree);
-int    FillTheTree              (TREE * tree);
 
 #endif // ACINATOR_H

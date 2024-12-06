@@ -1,0 +1,37 @@
+digraph list{
+	rankdir=LR;
+	bgcolor="#FFFFFF";	node[color="black", fontsize=14];
+	fixedsize=true;
+	Q00C51540[style=filled, shape=record, fillcolor="#B2EC5D", width=2, label ="{soup | {{parent | 00000000} | {left | 00C516A0} | {right | 00C51748}}}" ]
+	Q00C516A0[style=filled, shape=record, fillcolor="#B2EC5D", width=2, label ="{with garnier | {{parent | 00C51540} | {left | 00C516B8} | {right | 00C51730}}}" ]
+	Q00C516B8[style=filled, shape=record, fillcolor="#B2EC5D", width=2, label ="{mashed meat | {{parent | 00C516A0} | {left | 00C516D0} | {right | 00C516E8}}}" ]
+	Q00C516D0[style=filled, shape=record, fillcolor="#FF7B61", width=2, label ="{steak | {{parent | 00C516B8} | {left | 00000000} | {right | 00000000}}}" ]
+
+	Q00C516E8[style=filled, shape=record, fillcolor="#B2EC5D", width=2, label ="{with chicken | {{parent | 00C516B8} | {left | 00C51700} | {right | 00C51718}}}" ]
+	Q00C51700[style=filled, shape=record, fillcolor="#FF7B61", width=2, label ="{cotlets | {{parent | 00C516E8} | {left | 00000000} | {right | 00000000}}}" ]
+
+	Q00C51718[style=filled, shape=record, fillcolor="#FF7B61", width=2, label ="{chicken | {{parent | 00C516E8} | {left | 00000000} | {right | 00000000}}}" ]
+
+	Q00C516E8 -> Q00C51700
+	Q00C516E8 -> Q00C51718
+
+	Q00C516B8 -> Q00C516D0
+	Q00C516B8 -> Q00C516E8
+
+	Q00C51730[style=filled, shape=record, fillcolor="#FF7B61", width=2, label ="{mash | {{parent | 00C516A0} | {left | 00000000} | {right | 00000000}}}" ]
+
+	Q00C516A0 -> Q00C516B8
+	Q00C516A0 -> Q00C51730
+
+	Q00C51748[style=filled, shape=record, fillcolor="#B2EC5D", width=2, label ="{its red | {{parent | 00C51540} | {left | 00C51760} | {right | 00C51778}}}" ]
+	Q00C51760[style=filled, shape=record, fillcolor="#FF7B61", width=2, label ="{solyanka | {{parent | 00C51748} | {left | 00000000} | {right | 00000000}}}" ]
+
+	Q00C51778[style=filled, shape=record, fillcolor="#FF7B61", width=2, label ="{borsh | {{parent | 00C51748} | {left | 00000000} | {right | 00000000}}}" ]
+
+	Q00C51748 -> Q00C51760
+	Q00C51748 -> Q00C51778
+
+	Q00C51540 -> Q00C516A0
+	Q00C51540 -> Q00C51748
+
+}
